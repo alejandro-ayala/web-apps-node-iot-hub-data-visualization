@@ -66,7 +66,7 @@ const chartData = {
       if(jsonStr.includes("occupation1"))
       {
             console.log("Updating chart"); 
-            myLineChart.data.label = [messageData.IotData.station1,messageData.IotData.station2,messageData.IotData.station3,messageData.IotData.station4,messageData.IotData.station5];
+            myLineChart.data.labels = [messageData.IotData.station1,messageData.IotData.station2,messageData.IotData.station3,messageData.IotData.station4,messageData.IotData.station5];
             myLineChart.data.datasets[0].data = [messageData.IotData.occupation1,messageData.IotData.occupation2,messageData.IotData.occupation3,messageData.IotData.occupation4,messageData.IotData.occupation5];
             myLineChart.update();
             console.log("Updated chart");        
