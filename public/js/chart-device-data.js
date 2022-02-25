@@ -10,22 +10,29 @@ $(document).ready(() => {
   class DeviceData {
     constructor(deviceId) {
       this.deviceId = deviceId;
-      this.maxLen = 50;
+      this.maxLen = 1;
       this.timeData = new Array(this.maxLen);
-      this.temperatureData = new Array(this.maxLen);
-      this.humidityData = new Array(this.maxLen);
+      this.idStation = new Array(this.maxLen);
+      this.occupancyData1 = 1;
+      this.occupancyData2 = 1;
+      this.occupancyData3 = 1;
+      this.occupancyData4 = 1;
+      this.occupancyData5 = 1;
     }
 
-    addData(time, temperature, humidity) {
+    updateData(time, id, occuppancy1,occuppancy2,occuppancy3,occuppancy4,occuppancy5) {
       this.timeData.push(time);
-      this.temperatureData.push(temperature);
-      this.humidityData.push(humidity || null);
-
-      if (this.timeData.length > this.maxLen) {
-        this.timeData.shift();
-        this.temperatureData.shift();
-        this.humidityData.shift();
-      }
+      this.occupancyData1 = occuppancy1;
+      this.occupancyData2 = occuppancy2;
+      this.occupancyData3 = occuppancy3;
+      this.occupancyData4 = occuppancy4;
+      this.occupancyData5 = occuppancy5;
+      UpdateChart();
+      //if (this.timeData.length > this.maxLen) {
+      //  this.timeData.shift();
+      //  this.occupancyData1.shift();
+      //  this.occupancyData1.shift();
+      //}
     }
   }
 
@@ -53,63 +60,48 @@ $(document).ready(() => {
 
   const trackedDevices = new TrackedDevices();
 
-  // Define the chart axes
-  const chartData = {
-    datasets: [
-      {
-        fill: false,
-        label: 'Temperature',
-        yAxisID: 'Temperature',
-        borderColor: 'rgba(255, 204, 0, 1)',
-        pointBoarderColor: 'rgba(255, 204, 0, 1)',
-        backgroundColor: 'rgba(255, 204, 0, 0.4)',
-        pointHoverBackgroundColor: 'rgba(255, 204, 0, 1)',
-        pointHoverBorderColor: 'rgba(255, 204, 0, 1)',
-        spanGaps: true,
-      },
-      {
-        fill: false,
-        label: 'Humidity',
-        yAxisID: 'Humidity',
-        borderColor: 'rgba(24, 120, 240, 1)',
-        pointBoarderColor: 'rgba(24, 120, 240, 1)',
-        backgroundColor: 'rgba(24, 120, 240, 0.4)',
-        pointHoverBackgroundColor: 'rgba(24, 120, 240, 1)',
-        pointHoverBorderColor: 'rgba(24, 120, 240, 1)',
-        spanGaps: true,
-      }
-    ]
-  };
+const labels = ["Station1","Station2","Station3","Station4","Station5"];
+const chartData = {
+  labels: labels,
+  datasets: [{
+    label: 'Real time occupancy bike station',
+    data: [65, 59, 80, 81, 56],
+    backgroundColor: [
+      'rgba(255, 99, 132, 0.2)',
+      'rgba(255, 159, 64, 0.2)',
+      'rgba(255, 205, 86, 0.2)',
+      'rgba(75, 192, 192, 0.2)',
+      'rgba(54, 162, 235, 0.2)'
+    ],
+    borderColor: [
+      'rgb(255, 99, 132)',
+      'rgb(255, 159, 64)',
+      'rgb(255, 205, 86)',
+      'rgb(75, 192, 192)',
+      'rgb(54, 162, 235)'
+    ],
+    borderWidth: 1
+  }]
+};
 
   const chartOptions = {
-    scales: {
-      yAxes: [{
-        id: 'Temperature',
-        type: 'linear',
-        scaleLabel: {
-          labelString: 'Temperature (ºC)',
-          display: true,
+        type: 'bar',
+        //data: chartData,
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
         },
-        position: 'left',
-      },
-      {
-        id: 'Humidity',
-        type: 'linear',
-        scaleLabel: {
-          labelString: 'Humidity (%)',
-          display: true,
-        },
-        position: 'right',
-      }]
-    }
-  };
+      };  
 
   // Get the context of the canvas element we want to select
   const ctx = document.getElementById('iotChart').getContext('2d');
   const myLineChart = new Chart(
     ctx,
     {
-      type: 'line',
+      type: 'bar',
       data: chartData,
       options: chartOptions,
     });
@@ -119,18 +111,22 @@ $(document).ready(() => {
   let needsAutoSelect = true;
   const deviceCount = document.getElementById('deviceCount');
   const listOfDevices = document.getElementById('listOfDevices');
-  function OnSelectionChange() {
-    const device = trackedDevices.findDevice(listOfDevices[listOfDevices.selectedIndex].text);
-    chartData.labels = device.timeData;
-    chartData.datasets[0].data = device.temperatureData;
-    chartData.datasets[1].data = device.humidityData;
+  function UpdateChart() {
+    //const device = trackedDevices.findDevice(listOfDevices[listOfDevices.selectedIndex].text);
+    //TODO: update the labels in case that stations change dinamically
+    //chartData.labels = 
+    chartData.data = device.occupancyData1;
+    chartData.data = device.occupancyData2;
+    chartData.data = device.occupancyData3;
+    chartData.data = device.occupancyData4;
+    chartData.data = device.occupancyData5;                
     myLineChart.update();
   }
-  listOfDevices.addEventListener('change', OnSelectionChange, false);
+  listOfDevices.addEventListener('change', UpdateChart, false);
 
   // When a web socket message arrives:
   // 1. Unpack it
-  // 2. Validate it has date/time and temperature
+  // 2. Validate it has date/time and occupancyData
   // 3. Find or create a cached device to hold the telemetry data
   // 4. Append the telemetry data
   // 5. Update the chart UI
@@ -139,22 +135,22 @@ $(document).ready(() => {
       const messageData = JSON.parse(message.data);
       console.log(messageData);
 
-      // time and either temperature or humidity are required
-      if (!messageData.MessageDate || (!messageData.IotData.temperature && !messageData.IotData.humidity)) {
-        return;
-      }
+      // time and either idStation or occupancyData are required
+      //if (!messageData.MessageDate || (!messageData.IotData.idStation && !messageData.IotData.occupancyData)) {
+        //return;
+      //}
 
       // find or add device to list of tracked devices
       const existingDeviceData = trackedDevices.findDevice(messageData.DeviceId);
 
       if (existingDeviceData) {
-        existingDeviceData.addData(messageData.MessageDate, messageData.IotData.temperature, messageData.IotData.humidity);
+        existingDeviceData.updateData(messageData.MessageDate,  messageData.IotData.occupancyData1, messageData.IotData.occupancyData2, messageData.IotData.occupancyData3, messageData.IotData.occupancyData4, messageData.IotData.occupancyData5);
       } else {
         const newDeviceData = new DeviceData(messageData.DeviceId);
         trackedDevices.devices.push(newDeviceData);
         const numDevices = trackedDevices.getDevicesCount();
         deviceCount.innerText = numDevices === 1 ? `${numDevices} device` : `${numDevices} devices`;
-        newDeviceData.addData(messageData.MessageDate, messageData.IotData.temperature, messageData.IotData.humidity);
+        newDeviceData.updateData(messageData.MessageDate,  messageData.IotData.occupancyData1, messageData.IotData.occupancyData2, messageData.IotData.occupancyData3, messageData.IotData.occupancyData4, messageData.IotData.occupancyData5);
 
         // add device to the UI list
         const node = document.createElement('option');
@@ -166,11 +162,10 @@ $(document).ready(() => {
         if (needsAutoSelect) {
           needsAutoSelect = false;
           listOfDevices.selectedIndex = 0;
-          OnSelectionChange();
+          UpdateChart();
         }
       }
-
-      myLineChart.update();
+      UpdateChart();
     } catch (err) {
       console.error(err);
     }
